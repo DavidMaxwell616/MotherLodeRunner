@@ -1,4 +1,4 @@
-const TILE = 16;
+const TILE = 32;
 const SCALE = 3;
 
 // Apple II-ish palette (lo-fi approximation)
@@ -34,25 +34,6 @@ const DIG_COOLDOWN = 0.20;     // seconds between digs
 const HOLE_OPEN_TIME = 3.0;    // seconds until brick regens
 const ENEMY_TRAP_TIME = 2.0;   // seconds an enemy is stuck before "climbing out"
 
-// const LEVEL_1 = [
-//     "                  S         ",
-//     "    $             S         ",
-//     "#######H#######   S         ",
-//     "       H----------S    $    ",
-//     "       H    ##H   #######H##",
-//     "       H    ##H          H  ",
-//     "     0 H    ##H       $0 H  ",
-//     "##H#####    ########H#######",
-//     "  H                 H       ",
-//     "  H           0     H       ",
-//     "#########H##########H       ",
-//     "         H          H       ",
-//     "       $ H----------H   $   ",
-//     "    H######         #######H",
-//     "    H         &  $         H",
-//     "############################",
-// ];
-
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
 class LRScene extends Phaser.Scene {
@@ -69,13 +50,18 @@ class LRScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.json('classic_levels', '../assets/levels/classic_levels.js');
-
+        this.load.json('championship_levels', '../assets/levels/json/championship_levels.json');
+        this.load.json('classic_levels', '../assets/levels/json/classic_levels.json');
+        this.load.json('fanBookMod_levels', '../assets/levels/json/fanBookMod_levels.json');
+        this.load.json('professional_levels', '../assets/levels/json/professional_levels.json');
+        this.load.json('revenge_levels', '../assets/levels/json/revenge_levels.json');
     }
 
     create() {
         this.cameras.main.setBackgroundColor(PAL.bg);
+        const data = this.cache.json.get('classic_levels');
 
+        const LEVEL_1 = data.classicData[0];
         this.loadLevel(LEVEL_1);
 
         // Generate pixel tilesheet dynamically
