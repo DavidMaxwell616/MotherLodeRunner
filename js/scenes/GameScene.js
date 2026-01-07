@@ -53,14 +53,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.spritesheet('player', 'assets/images/player.png', { frameWidth: 32, frameHeight: 32 });
-        this.load.spritesheet('guard', 'assets/images/guard.png', { frameWidth: 32, frameHeight: 32 });
-        this.load.spritesheet('tiles', 'assets/images/tiles.png', { frameWidth: 32, frameHeight: 32 });
-        this.load.json('championship_levels', '../assets/levels/json/championship_levels.json');
-        this.load.json('classic_levels', '../assets/levels/json/classic_levels.json');
-        this.load.json('fanBookMod_levels', '../assets/levels/json/fanBookMod_levels.json');
-        this.load.json('professional_levels', '../assets/levels/json/professional_levels.json');
-        this.load.json('revenge_levels', '../assets/levels/json/revenge_levels.json');
+        this.load.path = "assets/images/Theme/APPLE2/";
+        this.load.spritesheet('player', 'runner.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('guard', 'guard.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('tiles', 'tiles.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.path = "assets/levels/json/";
+        this.load.json('championship_levels', 'championship_levels.json');
+        this.load.json('classic_levels', 'classic_levels.json');
+        this.load.json('fanBookMod_levels', 'fanBookMod_levels.json');
+        this.load.json('professional_levels', 'professional_levels.json');
+        this.load.json('revenge_levels', 'revenge_levels.json');
     }
 
     create() {
