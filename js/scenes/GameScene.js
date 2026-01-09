@@ -81,13 +81,14 @@ export default class GameScene extends Phaser.Scene {
     }
 
     startLevel(idx) {
-        //this.levelIndex = (idx + LEVELS.length) % LEVELS.length;
         if (this.map) this.map.destroy();
         if (this.player) this.player.destroy();
         if (this.guards) this.guards.clear(true, true);
         this.holes.clear();
         const data = this.cache.json.get('classic_levels');
-        this.level = parseLevel(data.classicData[0]);
+        const LEVELS = data.classicData;
+        this.levelIndex = (idx + LEVELS.length) % LEVELS.length;
+        this.level = parseLevel(LEVELS[this.levelIndex]);
         this.goldLeft = this.level.gold;
         this.exitUnlocked = false;
 
@@ -103,7 +104,6 @@ export default class GameScene extends Phaser.Scene {
 
         const p = cellToWorld(this.level.playerSpawn.x, this.level.playerSpawn.y);
         this.player = this.physics.add.sprite(p.x, p.y, 'player', 0);
-        this.player.body.setSize(32, 32).setOffset(2, 1);
         this.player.speed = 92;
         this.player.climb = 84;
         this.player.vy = 0;
@@ -113,7 +113,6 @@ export default class GameScene extends Phaser.Scene {
         this.level.guards.forEach(g => {
             const w = cellToWorld(g.x, g.y);
             const s = this.physics.add.sprite(w.x, w.y, 'guard', 0);
-            s.body.setSize(TS, TS).setOffset(2, 1);
             s.speed = 70;
             s.climb = 66;
             s.vy = 0;
