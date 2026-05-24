@@ -1,11 +1,12 @@
-import GameScene from './scenes/GameScene.js';
-const TILE_SIZE = 32;
+import GameScene from './GameScene.js';
+
+const TS = 32;
 
 const config = {
     type: Phaser.AUTO,
     parent: 'game',
-    width: 28 * TILE_SIZE,
-    height: 16 * TILE_SIZE,
+    width: 28 * TS,
+    height: 16 * TS,
     backgroundColor: '#000000',
     pixelArt: true,
     physics: {
