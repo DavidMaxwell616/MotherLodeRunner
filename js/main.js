@@ -1,3 +1,4 @@
+import SplashScene from './SplashScene.js';
 import GameScene from './GameScene.js';
 
 const TS = 32;
@@ -13,7 +14,7 @@ const config = {
         default: 'arcade',
         arcade: { gravity: { y: 0 }, debug: true }
     },
-    scene: [GameScene]
+    scene: [SplashScene, GameScene]
 };
 
 new Phaser.Game(config);

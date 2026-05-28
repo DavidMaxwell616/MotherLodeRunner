@@ -12,12 +12,20 @@ export const TILE = {
     EXIT: 7
 };
 
-export const LEVELS = {
-    APPLE2: 0,
-    C64: 1,
-    MAX: 2,
-    PC: 3
-}
+export const THEMES = [
+    "APPLE2",
+    "C64",
+    "MAX",
+    "PC"
+]
+
+export const LEVEL_TYPES = [
+    'classic_levels',
+    'championship_levels',
+    'fanBookMod_levels',
+    'professional_levels',
+    'revenge_levels'
+]
 
 export const DIG_COOLDOWN_MS = 350;
 export const DIG_ANIM_MS = 260;
