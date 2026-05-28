@@ -709,311 +709,65 @@ export default class GameScene extends Phaser.Scene {
 
 
     moveGuard(g) {
-        const speed = 70;
-        const snapSpeed = 10;
-
-        if (g.stunUntil && this.time.now < g.stunUntil) return;
+        const now = this.time.now;
+        if (g.stunUntil && now < g.stunUntil) return;
 
         const gc = worldToCell(g.x, g.y);
-        const runnerCell = worldToCell(this.runner.x, this.runner.y);
+        const rc = worldToCell(this.runner.x, this.runner.y);
 
-        const tileHere = this.tileAt(gc.cx, gc.cy);
-        const tileBelow = this.tileAt(gc.cx, gc.cy + 1);
+        let wx = 0;
+        let wy = 0;
 
-        const onLadder =
-            tileHere === TILE.LADDER ||
-            tileHere === TILE.EXIT_LADDER;
+        const onLadder = this.isLadder(gc.cx, gc.cy);
+        const ladderAbove = this.isLadder(gc.cx, gc.cy - 1);
+        const ladderBelow = this.isLadder(gc.cx, gc.cy + 1);
 
-        const groundBelow =
-            tileBelow === TILE.BRICK ||
-            tileBelow === TILE.SOLID ||
-            tileBelow === TILE.LADDER ||
-            tileBelow === TILE.EXIT_LADDER;
-
-        const centeredX = Math.abs(g.x - cellToWorld(gc.cx).x) < 3;
-        const centeredY = Math.abs(g.y - cellToWorld(gc.cy).y) < 3;
-
-        // fall first
-        if (!onLadder && !groundBelow) {
-            g.state = "falling";
-            g.body.setVelocityX(0);
-            g.body.setVelocityY(speed * 1.4);
-
-            g.x = Phaser.Math.Linear(g.x, cellToWorldX(gc.cx), 0.25);
-            return;
+        // If runner is above/below, use ladder if available
+        if (rc.cy < gc.cy && (onLadder || ladderAbove)) {
+            wy = -1;
         }
-
-        // landed
-        if (g.state === "falling") {
-            g.y = cellToWorldY(gc.cy);
-            g.body.setVelocityY(0);
-            g.state = "running";
+        else if (rc.cy > gc.cy && (onLadder || ladderBelow)) {
+            wy = 1;
         }
+        else {
+            // Otherwise chase horizontally
+            wx = rc.cx < gc.cx ? -1 : 1;
 
-        // only make new decisions near tile centers
-        if (!centeredX || !centeredY) {
-            return;
-        }
+            const nextCx = gc.cx + wx;
 
-        g.x = cellToWorldX(gc.cx);
-        g.y = cellToWorldY(gc.cy);
-
-        const canMoveTo = (cx, cy) => {
-            const t = this.tileAt(cx, cy);
-            const b = this.tileAt(cx, cy + 1);
-
-            const blocked =
-                t === TILE.BRICK ||
-                t === TILE.SOLID;
-
-            const supported =
-                b === TILE.BRICK ||
-                b === TILE.SOLID ||
-                b === TILE.LADDER ||
-                b === TILE.EXIT_LADDER ||
-                t === TILE.LADDER ||
-                t === TILE.EXIT_LADDER;
-
-            if (blocked || !supported) return false;
-
-            // prevent duplicate/stacked guards
-            for (const other of this.guards.getChildren()) {
-                if (other === g) continue;
-
-                const oc = worldToCell(other.x, other.y);
-                if (oc.cx === cx && oc.cy === cy) {
-                    return false;
-                }
-            }
-
-            return true;
-        };
-
-        const ladderHere =
-            tileHere === TILE.LADDER ||
-            tileHere === TILE.EXIT_LADDER;
-
-        const ladderAbove =
-            this.tileAt(gc.cx, gc.cy - 1) === TILE.LADDER ||
-            this.tileAt(gc.cx, gc.cy - 1) === TILE.EXIT_LADDER;
-
-        const ladderBelow =
-            this.tileAt(gc.cx, gc.cy + 1) === TILE.LADDER ||
-            this.tileAt(gc.cx, gc.cy + 1) === TILE.EXIT_LADDER;
-
-        // vertical chasing
-        if (runnerCell.cy < gc.cy && (ladderHere || ladderAbove)) {
-            g.state = "climbing";
-            g.body.setVelocityX(0);
-            g.body.setVelocityY(-speed);
-            return;
-        }
-
-        if (runnerCell.cy > gc.cy && (ladderHere || ladderBelow)) {
-            g.state = "climbing";
-            g.body.setVelocityX(0);
-            g.body.setVelocityY(speed);
-            return;
-        }
-
-        // horizontal chase
-        let dir = runnerCell.cx < gc.cx ? -1 : 1;
-
-        if (!canMoveTo(gc.cx + dir, gc.cy)) {
-            if (canMoveTo(gc.cx - dir, gc.cy)) {
-                dir *= -1;
-            } else {
-                g.body.setVelocity(0, 0);
-                return;
+            if (this.isSolid(nextCx, gc.cy) || !this.isWalkable(nextCx, gc.cy)) {
+                wx *= -1;
             }
         }
 
-        g.state = "running";
-        g.dir = dir;
-        g.body.setVelocityY(0);
-        g.body.setVelocityX(dir * speed);
+        this.applyMovement(g, wx, wy);
 
-        if (g.anims) {
-            g.setFlipX(dir < 0);
+        if (g.state === "fall") {
+            g.play("g-fall", true);
+        }
+        else if (g.state === "climb") {
+            g.play("g-climb", true);
+        }
+        else if (g.state === "rope") {
+            g.play("g-rope", true);
+        }
+        else if (g.state === "run") {
+            g.play("g-run", true);
+        }
+        else {
+            g.play("g-stand", true);
         }
     }
 
+    cellCenterX(cx) {
+        return cx * TS + TS / 2;
+    }
+
+    cellCenterY(cy) {
+        return cy * TS + TS / 2;
+    }
 
 
-    // updateGuard(g) {
-    //     const now = this.time.now;
-    //     if (now < g.stunUntil) return;
-
-    //     const gc = worldToCell(g.x, g.y);
-    //     // Continue ladder movement until finished
-    //     if (g.ladderCommit) {
-    //         const c = worldToCell(g.x, g.y);
-    //         const center = cellToWorld(c.cx, c.cy);
-
-    //         g.x = center.x;
-
-    //         if (g.ladderCommit === 'up') {
-    //             const onLadder = this.isLadder(c.cx, c.cy);
-    //             const ladderUnderGuard = this.isLadder(c.cx, c.cy + 1);
-
-    //             if (!onLadder && ladderUnderGuard) {
-    //                 // Finished climbing: force a horizontal run step
-    //                 g.ladderCommit = null;
-    //                 g.targetLadder = null;
-
-    //                 const pc = worldToCell(this.runner.x, this.runner.y);
-    //                 let dir = Math.sign(pc.cx - c.cx);
-
-    //                 if (dir === 0) dir = g.facing || 1;
-
-    //                 // Try toward runner, otherwise opposite direction
-    //                 if (!this.canOccupy(c.cx + dir, c.cy)) {
-    //                     dir *= -1;
-    //                 }
-
-    //                 if (this.canOccupy(c.cx + dir, c.cy)) {
-    //                     g.nextStep = { cx: c.cx + dir, cy: c.cy };
-    //                     g.nextPathAt = now + 250;
-    //                     g.state = 'run';
-    //                 } else {
-    //                     g.nextStep = null;
-    //                     g.nextPathAt = 0;
-    //                     g.state = 'stand';
-    //                 }
-    //             } else {
-    //                 this.applyMovement(g, 0, -1);
-    //                 g.play('g-climb', true);
-    //                 return;
-    //             }
-    //         }
-    //         g.ladderCommit = null;
-    //         g.nextStep = null;
-    //         g.nextPathAt = 0;
-    //     }
-    //     // Panic in hole
-    //     if (this.tileAt(gc.cx, gc.cy) === TILE.HOLE) {
-    //         g.stunUntil = now + GUARD_TRAP_MS;
-
-    //         if (!g.panicPhase) g.panicPhase = Math.random() * 1000;
-    //         g.panicPhase += this.game.loop.delta;
-
-    //         g.x += Math.sin(g.panicPhase * 0.04) * 1.2;
-    //         g.y += Math.sin(g.panicPhase * 0.02) * 0.6;
-
-    //         // Optional tint; comment out for pure Apple II look
-    //         g.setTint(0xff7777);
-
-    //         g.play('g-panic', true);
-    //         g.state = 'panic';
-    //         return;
-    //     } else {
-    //         if (g.tintTopLeft !== 0xffffff) g.clearTint();
-    //     }
-    //     const falling =
-    //         g.state === 'fall' ||
-    //         (!this.hasGroundUnderSprite(g.x, g.y) && !this.isLadder(gc.cx, gc.cy) && !this.isRope(gc.cx, gc.cy));
-
-    //     if (falling) {
-    //         g.targetLadder = null;
-    //         g.nextStep = null;
-    //         g.nextPathAt = 0;
-    //     }
-    //     // Repath occasionally, but do not change direction while committed to a ladder
-    //     if (now >= (g.nextPathAt || 0)) {
-    //         const runnerCell = worldToCell(this.runner.x, this.runner.y);
-    //         const start = { cx: gc.cx, cy: gc.cy };
-
-    //         let goal = this.getPathTargetCell();
-
-    //         if (runnerCell.cy !== gc.cy) {
-    //             // Keep current ladder target until reached
-    //             if (g.targetLadder && gc.cx !== g.targetLadder.cx) {
-    //                 goal = { cx: g.targetLadder.cx, cy: gc.cy };
-    //             } else {
-    //                 const ladderGoal = this.findNearestUsableLadder(gc.cx, gc.cy, runnerCell.cy);
-
-    //                 if (ladderGoal) {
-    //                     g.targetLadder = ladderGoal;
-
-    //                     if (gc.cx !== ladderGoal.cx) {
-    //                         goal = { cx: ladderGoal.cx, cy: gc.cy };
-    //                     } else if (this.isLadder(gc.cx, gc.cy)) {
-    //                         goal = {
-    //                             cx: gc.cx,
-    //                             cy: runnerCell.cy < gc.cy ? gc.cy - 1 : gc.cy + 1
-    //                         };
-    //                     }
-    //                 }
-    //             }
-    //         } else {
-    //             g.targetLadder = null;
-    //         }
-
-    //         g.nextStep = this.bfsNextStep(start, goal);
-    //         g.nextPathAt = now + 180;
-    //     }
-
-    //     let wx = 0, wy = 0;
-
-    //     if (g.nextStep) {
-    //         const target = cellToWorld(g.nextStep.cx, g.nextStep.cy);
-    //         const dx = target.x - g.x;
-    //         const dy = target.y - g.y;
-
-    //         // Keep moving until visually centered in the target cell
-    //         if (Math.abs(dx) > 2) wx = Math.sign(dx);
-    //         if (Math.abs(dy) > 2) wy = Math.sign(dy);
-
-    //         // Snap when close
-    //         if (Math.abs(dx) <= 2) g.x = target.x;
-    //         if (Math.abs(dy) <= 2) g.y = target.y;
-
-    //         // Once centered, allow a new path step
-    //         if (Math.abs(dx) <= 2 && Math.abs(dy) <= 2) {
-    //             g.nextStep = null;
-    //             g.nextPathAt = 0;
-    //         }
-    //         if (g.nextStep) {
-    //             const wantsVertical = g.nextStep.cy !== gc.cy;
-    //             const wantsHorizontal = g.nextStep.cx !== gc.cx;
-
-    //             const onLadder = this.isLadder(gc.cx, gc.cy);
-    //             const ladderAbove = this.isLadder(gc.cx, gc.cy - 1);
-    //             const ladderBelow = this.isLadder(gc.cx, gc.cy + 1);
-
-    //             const target = cellToWorld(g.nextStep.cx, g.nextStep.cy);
-    //             const closeToTargetY = Math.abs(target.y - g.y) <= 8;
-    //             const atTopOfLadder = onLadder && !ladderAbove && closeToTargetY;
-    //             const atBottomOfLadder = onLadder && !ladderBelow && closeToTargetY;
-
-    //             if (wantsVertical && (onLadder || ladderAbove || ladderBelow)) {
-    //                 wx = 0;
-    //                 wy = Math.sign(g.nextStep.cy - gc.cy);
-    //             } else if (wantsHorizontal && (atTopOfLadder || atBottomOfLadder)) {
-    //                 wy = 0;
-    //                 wx = Math.sign(g.nextStep.cx - gc.cx);
-    //             } else if (wx !== 0 && wy !== 0) {
-    //                 wy = 0;
-    //             }
-    //         }
-    //     }
-
-    //     if (wy < 0 && this.isLadder(gc.cx, gc.cy)) {
-    //         g.ladderCommit = 'up';
-    //     } else if (wy > 0 && this.isLadder(gc.cx, gc.cy)) {
-    //         g.ladderCommit = 'down';
-    //     }
-    //     this.applyMovement(g, wx, wy);
-
-    //     // Animate guard by state
-    //     if (g.state === 'fall') g.play('g-fall', true);
-    //     else if (g.state === 'climb') g.play('g-climb', true);
-    //     else if (g.state === 'run') g.play('g-run', true);
-    //     else if (g.state === 'rope') g.play('g-rope', true);
-    //     else g.play('g-stand', true);
-    // }
-
-    // ---------------- Main update ----------------
     popUpIfInsideBrick(sprite) {
 
         const footY = sprite.y + TS * 0.45;
