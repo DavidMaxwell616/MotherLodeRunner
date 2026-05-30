@@ -73,7 +73,7 @@ export default class GameScene extends Phaser.Scene {
         this.load.spritesheet('guard', 'guard.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('tiles', 'tiles.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('dig', 'hole.png', { frameWidth: 32, frameHeight: 64 });
-        this.load.path = "assets/levels/json/";
+        this.load.path = "assets/json/";
         this.load.json('championship_levels', 'championship_levels.json');
         this.load.json('classic_levels', 'classic_levels.json');
         this.load.json('fanBookMod_levels', 'fanBookMod_levels.json');
@@ -240,12 +240,12 @@ export default class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.runner, this.layer);
         this.physics.add.collider(this.guards, this.layer);
 
-        // this.physics.add.overlap(this.runner, this.guards, () => {
-        //     this.flash('CAUGHT!',100);
-        // lives--;
-        // if (lives === 0) { gameOver(); }
-        // this.startLevel(this.levelIndex);
-        // });
+        this.physics.add.overlap(this.runner, this.guards, () => {
+            this.flash('CAUGHT!', 100);
+            lives--;
+            if (lives === 0) { gameOver(); }
+            this.startLevel(this.levelIndex);
+        });
 
         this.refreshHUD();
         this.flash(`LEVEL ${this.levelIndex + 1}`, this.game.config.height / 2);
